@@ -507,7 +507,6 @@ export default function Home() {
           const rawText = data.content?.map((i) => (i.type === "text" ? i.text : "")).filter(Boolean).join("\n") || "";
           const { cleanText, results } = parseStyleResults(rawText);
           setMessages([
-            { role: "user", text: "Hello, I'd like to explore my thinking and leadership styles.", content: "Hello, I'd like to explore my thinking and leadership styles.", styleResults: [] },
             { role: "assistant", text: cleanText, content: rawText, styleResults: results },
           ]);
         })
