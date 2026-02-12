@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "Kinetic Styles — Reflective Coach",
+  title: "Kinetic Thinking Framework — Style Explorer",
   description:
-    "A guided conversation to explore your thinking, managing, and leading styles through the Kinetic framework.",
+    "A guided conversation to explore your thinking, managing, and leading styles through the Kinetic Thinking Framework.",
 };
 
 export default function RootLayout({ children }) {

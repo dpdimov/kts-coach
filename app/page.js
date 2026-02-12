@@ -17,8 +17,8 @@ THE THREE FRAMEWORKS form a conceptual cube:
 • Performance (managing) ↔ Ecosystem (leading)
 
 KINETIC THINKING STYLES
-Axes: Uncertainty (Structured ↔ Exploratory) × Possibility (Established ↔ Reframing)
-Styles: Focused (structured+established), Playful (exploratory+established), Incremental (structured+reframing), Breakaway (exploratory+reframing)
+Axes: Uncertainty (Reason ↔ Play) × Possibility (Structure ↔ Openness)
+Styles: Focused (reason+structure), Playful (play+structure), Incremental (reason+openness), Breakaway (play+openness)
 
 KINETIC MANAGING STYLES
 Axes: Process (Control ↔ Enable) × Performance (Productivity ↔ Learning)
@@ -70,11 +70,11 @@ For each axis, score from -10 to +10 based on the user's answers to the two rele
 STYLE_RESULT OUTPUT FORMAT:
 When you complete an assessment and determine a style, you MUST include exactly this marker in your response (the frontend will parse it and render a visualisation):
 
-<!--STYLE:{"framework":"thinking","dim1_label":"Uncertainty","dim1_left":"Structured","dim1_right":"Exploratory","dim1_score":0,"dim2_label":"Possibility","dim2_left":"Established","dim2_right":"Reframing","dim2_score":0,"style":"Focused","summary":"Brief 1-sentence summary"}-->
+<!--STYLE:{"framework":"thinking","dim1_label":"Uncertainty","dim1_left":"Reason","dim1_right":"Play","dim1_score":0,"dim2_label":"Possibility","dim2_left":"Structure","dim2_right":"Openness","dim2_score":0,"style":"Focused","summary":"Brief 1-sentence summary"}-->
 
 Replace the values with the actual scores and style. The marker must be valid JSON inside the comment tags. Use these exact framework/label values:
 
-For thinking: framework="thinking", dim1_label="Uncertainty", dim1_left="Structured", dim1_right="Exploratory", dim2_label="Possibility", dim2_left="Established", dim2_right="Reframing", styles: Focused/Playful/Incremental/Breakaway
+For thinking: framework="thinking", dim1_label="Uncertainty", dim1_left="Reason", dim1_right="Play", dim2_label="Possibility", dim2_left="Structure", dim2_right="Openness", styles: Focused/Playful/Incremental/Breakaway
 
 For managing: framework="managing", dim1_label="Process", dim1_left="Control", dim1_right="Enable", dim2_label="Performance", dim2_left="Productivity", dim2_right="Learning", styles: Efficient/Supportive/Inquisitive/Venturing
 
@@ -106,20 +106,26 @@ IMPORTANT:
 
 const FRAMEWORK_COLORS = {
   thinking: {
-    Focused: "#63b3ed", Playful: "#f6ad55",
-    Incremental: "#68d391", Breakaway: "#fc8181",
-    default: "#63b3ed",
+    Focused: "#ff6f20", Playful: "#bed600",
+    Incremental: "#9f60b5", Breakaway: "#009ddb",
+    default: "#ff6f20",
   },
   managing: {
-    Efficient: "#a78bfa", Supportive: "#f9a8d4",
-    Inquisitive: "#67e8f9", Venturing: "#fbbf24",
-    default: "#a78bfa",
+    Efficient: "#ff6f20", Supportive: "#bed600",
+    Inquisitive: "#9f60b5", Venturing: "#009ddb",
+    default: "#ff6f20",
   },
   leading: {
-    Troubleshooter: "#fb923c", "Co-creator": "#34d399",
-    Challenger: "#f87171", Transformer: "#818cf8",
-    default: "#fb923c",
+    Troubleshooter: "#ff6f20", "Co-creator": "#bed600",
+    Challenger: "#9f60b5", Transformer: "#009ddb",
+    default: "#ff6f20",
   },
+};
+
+const FRAMEWORK_BACKGROUNDS = {
+  thinking: "/images/thinking-background.png",
+  managing: "/images/managing-background.png",
+  leading: "/images/leading-background.png",
 };
 
 const FRAMEWORK_LABELS = {
@@ -153,79 +159,69 @@ function parseStyleResults(text) {
 
 function StyleMatrix({ data }) {
   const canvasRef = useRef(null);
+  const imgRef = useRef(null);
   const fw = data.framework;
   const colors = FRAMEWORK_COLORS[fw] || FRAMEWORK_COLORS.thinking;
   const accent = colors[data.style] || colors.default;
+  const bgSrc = FRAMEWORK_BACKGROUNDS[fw] || FRAMEWORK_BACKGROUNDS.thinking;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const displayW = 280;
-    const displayH = 280;
-    canvas.width = displayW * dpr;
-    canvas.height = displayH * dpr;
-    canvas.style.width = displayW + "px";
-    canvas.style.height = displayH + "px";
-    ctx.scale(dpr, dpr);
 
-    const w = displayW, h = displayH;
-    const cx = w / 2, cy = h / 2, pad = 38;
+    const draw = () => {
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const maxW = Math.min(280, canvas.parentElement?.clientWidth || 280);
+      const displayW = maxW;
+      const displayH = maxW;
+      canvas.width = displayW * dpr;
+      canvas.height = displayH * dpr;
+      canvas.style.width = displayW + "px";
+      canvas.style.height = displayH + "px";
+      ctx.scale(dpr, dpr);
 
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#111827";
-    ctx.fillRect(0, 0, w, h);
+      const w = displayW, h = displayH;
 
-    // Grid
-    ctx.strokeStyle = "rgba(100,140,200,0.06)";
-    ctx.lineWidth = 1;
-    for (let i = 1; i < 8; i++) {
-      const x = pad + ((w - 2 * pad) / 8) * i;
-      ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, h - pad); ctx.stroke();
-      const y = pad + ((h - 2 * pad) / 8) * i;
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw background image if loaded
+      if (imgRef.current) {
+        ctx.drawImage(imgRef.current, 0, 0, w, h);
+      }
+
+      // Plot point
+      const cx = w / 2, cy = h / 2;
+      const plotRange = (w / 2) * (10 / 12);
+      const plotX = cx + (data.dim1_score / 10) * plotRange;
+      const plotY = cy - (data.dim2_score / 10) * plotRange;
+
+      // Glow
+      const gradient = ctx.createRadialGradient(plotX, plotY, 0, plotX, plotY, 24);
+      gradient.addColorStop(0, accent + "80");
+      gradient.addColorStop(1, accent + "00");
+      ctx.fillStyle = gradient;
+      ctx.beginPath(); ctx.arc(plotX, plotY, 24, 0, Math.PI * 2); ctx.fill();
+
+      // Point
+      ctx.fillStyle = accent;
+      ctx.beginPath(); ctx.arc(plotX, plotY, 6, 0, Math.PI * 2); ctx.fill();
+
+      // Ring
+      ctx.strokeStyle = accent + "80";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(plotX, plotY, 10, 0, Math.PI * 2); ctx.stroke();
+    };
+
+    // Load image then draw
+    if (!imgRef.current || imgRef.current.src !== bgSrc) {
+      const img = new Image();
+      img.onload = () => { imgRef.current = img; draw(); };
+      img.src = bgSrc;
+    } else {
+      draw();
     }
-
-    // Quadrant fills
-    const qa = 0.05;
-    ctx.fillStyle = `rgba(100,150,220,${qa})`; ctx.fillRect(pad, cy, cx - pad, h - pad - cy);
-    ctx.fillStyle = `rgba(220,170,80,${qa})`; ctx.fillRect(cx, cy, w - pad - cx, h - pad - cy);
-    ctx.fillStyle = `rgba(100,200,150,${qa})`; ctx.fillRect(pad, pad, cx - pad, cy - pad);
-    ctx.fillStyle = `rgba(220,100,100,${qa})`; ctx.fillRect(cx, pad, w - pad - cx, cy - pad);
-
-    // Axes
-    ctx.strokeStyle = "rgba(160,180,220,0.25)";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad, cy); ctx.lineTo(w - pad, cy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, pad); ctx.lineTo(cx, h - pad); ctx.stroke();
-
-    // Labels
-    ctx.font = "500 9px Inter, system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(160,180,220,0.6)";
-    ctx.fillText(data.dim1_left.toUpperCase(), pad + 30, cy + 14);
-    ctx.fillText(data.dim1_right.toUpperCase(), w - pad - 30, cy + 14);
-    ctx.fillText(data.dim2_right.toUpperCase(), cx, pad - 6);
-    ctx.fillText(data.dim2_left.toUpperCase(), cx, h - pad + 14);
-
-    // Plot point
-    const plotX = cx + (data.dim1_score / 10) * (cx - pad);
-    const plotY = cy - (data.dim2_score / 10) * (cy - pad);
-
-    const gradient = ctx.createRadialGradient(plotX, plotY, 0, plotX, plotY, 24);
-    gradient.addColorStop(0, accent + "50");
-    gradient.addColorStop(1, accent + "00");
-    ctx.fillStyle = gradient;
-    ctx.beginPath(); ctx.arc(plotX, plotY, 24, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = accent;
-    ctx.beginPath(); ctx.arc(plotX, plotY, 5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.strokeStyle = accent + "70";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(plotX, plotY, 9, 0, Math.PI * 2); ctx.stroke();
-  }, [data, accent]);
+  }, [data, accent, bgSrc]);
 
   return (
     <div style={{
@@ -252,9 +248,9 @@ function StyleMatrix({ data }) {
           {data.style}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
         <canvas ref={canvasRef} />
-        <div style={{ flex: 1, minWidth: 160 }}>
+        <div style={{ flex: 1, minWidth: 200, width: "100%" }}>
           <DimScore label={data.dim1_label} left={data.dim1_left} right={data.dim1_right} score={data.dim1_score} color={accent} />
           <DimScore label={data.dim2_label} left={data.dim2_left} right={data.dim2_right} score={data.dim2_score} color={accent} />
           {data.summary && (
@@ -534,34 +530,39 @@ export default function Home() {
         padding: 24,
       }}>
         <div style={{ maxWidth: 520, textAlign: "center" }}>
+          <img
+            src="/images/kinetic-logo.png"
+            alt="Kinetic Thinking Framework"
+            style={{ width: 80, height: "auto", marginBottom: 20, opacity: 0.9 }}
+          />
           <div style={{
             fontSize: 10, letterSpacing: 4, color: "#3a4a6a",
             textTransform: "uppercase", marginBottom: 16,
             fontFamily: "Inter, system-ui, sans-serif",
           }}>
-            Kinetic Framework · Dimov &amp; Pistrui
+            Kinetic Thinking Framework
           </div>
           <h1 style={{
             fontSize: 32, fontWeight: 300, color: "#d0daea",
             lineHeight: 1.3, margin: "0 0 12px 0",
           }}>
-            Reflective Coach
+            Style Explorer
           </h1>
           <p style={{
             fontSize: 16, color: "#6a7f99", lineHeight: 1.7,
             marginBottom: 32, fontStyle: "italic",
           }}>
             A guided conversation to explore how you think, manage, and lead —
-            through the lens of the Kinetic framework.
+            through the lens of the Kinetic Thinking Framework.
           </p>
           <div style={{
             display: "flex", gap: 24, justifyContent: "center",
             marginBottom: 36, flexWrap: "wrap",
           }}>
             {[
-              { label: "Thinking", desc: "Uncertainty × Possibility", color: "#63b3ed" },
-              { label: "Managing", desc: "Process × Performance", color: "#a78bfa" },
-              { label: "Leading", desc: "Ecosystem × Time", color: "#fb923c" },
+              { label: "Thinking", desc: "Uncertainty × Possibility", color: "#009ddb" },
+              { label: "Managing", desc: "Process × Performance", color: "#9f60b5" },
+              { label: "Leading", desc: "Ecosystem × Time", color: "#ff6f20" },
             ].map((f) => (
               <div key={f.label} style={{
                 padding: "12px 16px", borderRadius: 6,
@@ -588,6 +589,21 @@ export default function Home() {
           >
             Begin Reflection
           </button>
+          <div style={{
+            marginTop: 48, fontSize: 11, color: "#3a4a6a", lineHeight: 1.6,
+            fontFamily: "Inter, system-ui, sans-serif",
+          }}>
+            Based on: Dimov, D. and Pistrui, J. (2023).{" "}
+            <a
+              href="https://doi.org/10.1016/j.jbvd.2023.100015"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#4a6a8a", textDecoration: "underline" }}
+            >
+              Kinetic thinking styles: A tool for developing entrepreneurial thinking
+            </a>.{" "}
+            <em>Journal of Business Venturing Design</em>, 2, 100015.
+          </div>
         </div>
       </div>
     );
@@ -619,10 +635,10 @@ export default function Home() {
             fontSize: 10, letterSpacing: 3, textTransform: "uppercase",
             color: "#3a4a6a", fontFamily: "Inter, system-ui, sans-serif",
           }}>
-            Kinetic Framework
+            Kinetic Thinking Framework
           </div>
           <div style={{ fontSize: 17, color: "#c0ccdd", fontWeight: 400 }}>
-            Reflective Coach
+            Style Explorer
           </div>
         </div>
         <button
